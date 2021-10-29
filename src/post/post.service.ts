@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import slugify from 'slugify';
 import { Cat } from 'src/category/category.entity';
@@ -6,6 +6,7 @@ import { CategoryService } from 'src/category/category.service';
 import { Comment } from 'src/comment/comment.entity';
 import { Tag } from 'src/tag/tag.entity';
 import { TagService } from 'src/tag/tag.service';
+import { User } from 'src/user/user.entity';
 import { Repository } from 'typeorm';
 import { CreateCommenttDto } from './dtos/create-comment.dto';
 import { CreatePostDto } from './dtos/create-post.dto';
@@ -23,9 +24,15 @@ export class PostService {
     private tagRepository: Repository<Tag>,
     @InjectRepository(Comment)
     private commentRepository: Repository<Comment>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     // private readonly categoryService: CategoryService,    
     // private readonly tagService: TagService
   ) { }
+
+  private ensureOwnerShip(user: User, post: Post): boolean {
+    return user.id === post.user.id;
+  }
 
   public getPostsWithCommentCountQuery() // این متد یک کوئری قابل استفاده در بقیه متدها و کوئری های دیگر است
   {
@@ -73,7 +80,8 @@ export class PostService {
     return await this.postsRepository.createQueryBuilder('post')
       .leftJoinAndSelect('post.category', 'cat')
       .leftJoinAndSelect('post.tags', 'tag')
-      .leftJoinAndSelect('post.comments', 'comment','comment.isApproved = :isApproved', { isApproved: true })
+      .leftJoinAndSelect('post.user', 'user')
+      .leftJoinAndSelect('post.comments', 'comment', 'comment.isApproved = :isApproved', { isApproved: true })
       .andWhere('post.id = :id', { id })
       // .andWhere('comment.isApproved = :isApproved', { isApproved: true })
       // .select(['post','cat.title','tag.title'])
@@ -103,7 +111,7 @@ export class PostService {
 
   async create(
     createPostDto: CreatePostDto,
-    // user: User
+    user: User
   ): Promise<Post> {
 
     const cat = await this.catRepository.findOne(createPostDto.categoryId);
@@ -120,22 +128,34 @@ export class PostService {
     // post.user = user;
     post.category = cat;
     post.tags = tags;
+    post.user = user;
     // post.categoryId = createPostDto.categoryId
     // post.tags = createPostDto.tagsId
 
     return this.postsRepository.save(post);
   }
 
-  async remove(id: string): Promise<string> {
+  async remove(id: string, user: User): Promise<string> {
+    
+    const post = await this.findOne(id);
+    
+    if (!this.ensureOwnerShip(user, post)) {
+      throw new UnauthorizedException("You are nor own this Post!");
+    }
     await this.postsRepository.delete(id);
     return 'ok'
   }
 
   async update(
-    // id,
     updatePostDto: UpdatePostDto,
-    // user: User
+    user: User
   ) {
+
+    const p = await this.findOne(updatePostDto.id.toString());
+    
+    if (!this.ensureOwnerShip(user, p)) {
+      throw new UnauthorizedException("You are nor own this Post!");
+    }
 
     const cat = await this.catRepository.findOne(updatePostDto.categoryId);
     const tags = await this.tagRepository.findByIds(updatePostDto.tagIds);
@@ -149,14 +169,20 @@ export class PostService {
 
     await this.postsRepository.save(post);
 
-    return this.findOne(updatePostDto.id.toString())
+    return p;
+    // return this.findOne(updatePostDto.id.toString())
   }
 
   async createComment(
     postId: string,
     createCommenttDto: CreateCommenttDto,
-    // user: User
+    user: User
   ): Promise<Comment> {
+    const p = await this.findOne(postId);
+    
+    if (this.ensureOwnerShip(user, p)) {
+      throw new UnauthorizedException("You can not Comment for your own Post!");
+    }
 
     const post = await this.postsRepository.findOne(postId);
     const comment = this.commentRepository.create(createCommenttDto);

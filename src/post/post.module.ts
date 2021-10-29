@@ -6,12 +6,13 @@ import { Comment } from 'src/comment/comment.entity';
 import { CommentModule } from 'src/comment/comment.module';
 import { Tag } from 'src/tag/tag.entity';
 import { TagModule } from 'src/tag/tag.module';
+import { User } from 'src/user/user.entity';
 import { PostController } from './post.controller';
 import { Post } from './post.entity';
 import { PostService } from './post.service';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Post,Cat,Tag,Comment]),CategoryModule,TagModule,CommentModule],
+  imports:[TypeOrmModule.forFeature([Post,Cat,Tag,Comment,User])],
   controllers: [PostController],
   providers: [PostService]
 })

@@ -39,8 +39,8 @@ export class Post {
     
     
 
-    // @ManyToOne(() => User, user => user.posts)
-    // user: User;
+    @ManyToOne(() => User, user => user.posts)
+    user: User;
 
     @ManyToMany(() => Tag, tag => tag.posts,{onDelete:"CASCADE",onUpdate:"CASCADE"})
     @JoinTable({ name: 'post_tag' })

@@ -25,8 +25,8 @@ export class User{
     @Column('enum',{enum:UserRoleEnum,default:UserRoleEnum.USER})
     role:UserRoleEnum;
 
-    // @OneToMany(() => Post,(post) => post.user)
-    // posts:Post[]
+    @OneToMany(() => Post,(post) => post.user)
+    posts:Post[]
 
     // @OneToMany(() => Comment,(comment) => comment.user)
     // comments:Comment[]

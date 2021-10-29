@@ -1,10 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, ValidationPipe } from '@nestjs/common';
 import { PostService } from './post.service';
 import { Post as PostEntity } from './post.entity';
 import { CreatePostDto } from './dtos/create-post.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
 import { CreateCommenttDto } from './dtos/create-comment.dto';
 import { Comment } from 'src/comment/comment.entity';
+import { Roles } from 'src/auth/roles.decorator';
+import { User, UserRoleEnum } from 'src/user/user.entity';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { AuthGuard } from '@nestjs/passport';
+import { GetUser } from 'src/auth/get-user.decorator';
 
 @Controller('post')
 export class PostController {
@@ -12,17 +17,20 @@ export class PostController {
 
     // @UsePipes(new ValidationPipe({groups:['create']}))
     @Post()
+    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'),RolesGuard)
+    @Roles(UserRoleEnum.PUBLISHER,UserRoleEnum.ADMIN)
     create(
         @Body(
             // ValidationPipe
         ) createPostDto: CreatePostDto,
-        // @CurrentUser() user: User
+        @GetUser() user: User
     ): Promise<PostEntity> {
         // console.log('dto:', createPostDto);
 
         return this.postService.create(
-            createPostDto
-            // , user
+            createPostDto,
+            user
         );
     }
 
@@ -37,42 +45,47 @@ export class PostController {
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string): Promise<string> {
-        return this.postService.remove(id);
+    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'),RolesGuard)
+    @Roles(UserRoleEnum.PUBLISHER,UserRoleEnum.ADMIN)
+    remove(@Param('id') id: string,@GetUser() user:User): Promise<string> {
+        return this.postService.remove(id,user);
     }
 
     // @UsePipes(new ValidationPipe({groups:['create']}))
     @Put()
-    // @Put(':id')
+    @UseGuards(AuthGuard('jwt'),RolesGuard)
+    @Roles(UserRoleEnum.PUBLISHER,UserRoleEnum.ADMIN)
     update(
-        // @Param('id') id: string,
         @Body(
             // ValidationPipe
         ) updatePostDto: UpdatePostDto,
-        // @CurrentUser() user: User
+        @GetUser() user:User
     ){
 
         return this.postService.update(
-            // id,
-            updatePostDto
-            // , user
+            updatePostDto,
+            user
         );
     }
 
     @Post(':postId/comment')
+    @UseGuards(AuthGuard('jwt'))
     createComment(
         @Param('postId') postId: string,
         @Body(
             // ValidationPipe
         ) createCommenttDto: CreateCommenttDto,
-        // @CurrentUser() user: User
+        @GetUser() user:User
     ): Promise<Comment> {
         // console.log('dto:', createPostDto);
 
         return this.postService.createComment(
             postId,
-            createCommenttDto
-            // , user
+            createCommenttDto,
+            user
         );
     }
 }
+
+
