@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { SigninDTO } from './dtos/signin.dto';
 import { Response } from 'express';
+import { UpdatePasswordDto } from './dtos/update-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,15 +16,6 @@ export class AuthService {
         @InjectRepository(User) private userRipository: Repository<User>,
         private jwtService: JwtService
     ) { }
-
-    // async validateUser(username: string, pass: string): Promise<any> {
-    //   const user = await this.usersService.findOne(username);
-    //   if (user && user.password === pass) {
-    //     const { password, ...result } = user;
-    //     return result;
-    //   }
-    //   return null;
-    // }
 
     async signin(credentials: SigninDTO,res:Response) {
         
@@ -105,5 +97,33 @@ export class AuthService {
         res.clearCookie("jwt");
     }
 
+    async updatePassword(user:User,updatePasswordDto:UpdatePasswordDto,res:Response){
+        
+        const {password,confirmpassword} = updatePasswordDto;
 
+        if (password !== confirmpassword) {
+            throw new Error('Passwords are not the same!')
+        }
+
+        const hash_password = await bcrypt.hash(password, 10);
+
+        const u = this.userRipository.create({
+            id: user.id,
+            password:hash_password
+        });
+
+        const createdUser = await this.userRipository.save(u);
+        const payload = { username: user.email };
+        const token = this.jwtService.sign(payload);
+        const cookieOptions = {
+            expires: new Date(
+              Date.now() + 90 * 24 * 60 * 60 * 1000
+            ),
+            httpOnly: true
+        };
+        res.cookie('jwt', token, cookieOptions);
+
+        return { ...createdUser, token };
+
+    }
 }

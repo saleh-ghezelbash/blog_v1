@@ -187,6 +187,7 @@ export class PostService {
     const post = await this.postsRepository.findOne(postId);
     const comment = this.commentRepository.create(createCommenttDto);
     comment.post = post;
+    comment.user = user;
     return this.commentRepository.save(comment);
 
   }

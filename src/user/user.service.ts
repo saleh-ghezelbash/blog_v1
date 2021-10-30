@@ -2,6 +2,7 @@ import { HttpCode, HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dtos/create-user.dto';
+import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { User } from './user.entity';
 
@@ -16,23 +17,18 @@ export class UserService {
     return this.usersRepository.find();
   }
 
-  findOne(id: string): Promise<User> {
-    return this.usersRepository.findOne(id);
+  async findOne(id: string): Promise<User> {
+    // return this.usersRepository.findOne(id);
+    
+    return await this.usersRepository.createQueryBuilder('user')
+    .leftJoinAndSelect('user.posts', 'post')
+    .leftJoinAndSelect('post.comments', 'comment', 'comment.isApproved = :isApproved', { isApproved: true })
+    .andWhere('user.id = :id', { id })
+    // .select(['post','cat.title','tag.title'])
+    .getOne()
+
   }
 
-  // async findByUserName(username: string) {
-  //   return this.usersRepository.find({where:{email:username}});
-  // }
-
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const { name, email, password, confirmpassword } = createUserDto;
-
-    //  if (name) {
-    //     throw new HttpException('Name must be provied!',404);
-    //  }
-    const user = this.usersRepository.create(createUserDto);
-    return this.usersRepository.save(user);
-  }
 
   async remove(id: string): Promise<string> {
     await this.usersRepository.delete(id);
@@ -44,5 +40,31 @@ export class UserService {
     const user = this.usersRepository.create(updateUserDto);
     await this.usersRepository.save(user);
     return this.findOne(updateUserDto.id.toString())
+  }
+
+  async findProfile(id: string): Promise<User> {
+    return await this.usersRepository.createQueryBuilder('user')
+      .leftJoinAndSelect('user.posts', 'post')
+      .andWhere('user.id = :id', { id })
+      .getOne();
+  }
+
+  async deleteProfile(user: User): Promise<string> {
+    await this.usersRepository.delete(user.id);
+    return 'ok'
+  }
+
+  async updateProfile(user: User, updateProfileDto: UpdateProfileDto): Promise<User> {
+
+    const u = this.usersRepository.create({
+      id: user.id,
+      ...updateProfileDto
+    });
+    await this.usersRepository.save(u);
+    return this.findOne(user.id.toString())
+  }
+
+  async myProfile(user: User): Promise<User> {
+    return this.findOne(user.id.toString());
   }
 }

@@ -1,4 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { UserRoleEnum } from 'src/user/user.entity';
 import { CreateTagDto } from './dtos/create-tag.dto';
 import { Tag } from './tag.entity';
 import { TagService } from './tag.service';
@@ -8,6 +12,8 @@ export class TagController {
     constructor(private readonly tagService: TagService) {}
 
       @Post()
+      @UseGuards(AuthGuard('jwt'),RolesGuard)
+      @Roles(UserRoleEnum.ADMIN)
       create(@Body() createTagDto: CreateTagDto): Promise<Tag> {
         return this.tagService.create(createTagDto);
       }
@@ -27,6 +33,8 @@ export class TagController {
       }
     
       @Delete(':id')
+      @UseGuards(AuthGuard('jwt'),RolesGuard)
+      @Roles(UserRoleEnum.ADMIN)
       remove(@Param('id') id: string): Promise<void> {
         return this.tagService.remove(id);
       }

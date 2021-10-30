@@ -1,9 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Put, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { UserRoleEnum } from 'src/user/user.entity';
 import { CommentService } from './comment.service';
 
 @Controller('comment')
-// @UseGuards()
-// isAdmin()
+@UseGuards(AuthGuard('jwt'),RolesGuard)
+@Roles(UserRoleEnum.ADMIN)
 export class CommentController {
     constructor(private commentService:CommentService){}
 

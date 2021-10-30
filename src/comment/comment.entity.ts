@@ -19,8 +19,8 @@ export class Comment {
     @ManyToOne(() => Post, post => post.comments,{onDelete:"CASCADE",onUpdate:"CASCADE"})
     post: Post;
 
-    // @ManyToOne(type => User, user => user.comments)
-    // user: User;
+    @ManyToOne(type => User, user => user.comments,{onDelete:"CASCADE",onUpdate:"CASCADE"})
+    user: User;
 
     @BeforeInsert()
     beforeIn(){

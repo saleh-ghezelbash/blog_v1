@@ -17,7 +17,6 @@ export class PostController {
 
     // @UsePipes(new ValidationPipe({groups:['create']}))
     @Post()
-    @UseGuards(AuthGuard('jwt'))
     @UseGuards(AuthGuard('jwt'),RolesGuard)
     @Roles(UserRoleEnum.PUBLISHER,UserRoleEnum.ADMIN)
     create(
@@ -45,7 +44,6 @@ export class PostController {
     }
 
     @Delete(':id')
-    @UseGuards(AuthGuard('jwt'))
     @UseGuards(AuthGuard('jwt'),RolesGuard)
     @Roles(UserRoleEnum.PUBLISHER,UserRoleEnum.ADMIN)
     remove(@Param('id') id: string,@GetUser() user:User): Promise<string> {

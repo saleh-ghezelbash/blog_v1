@@ -20,6 +20,7 @@ export class User{
     email:string;
 
     @Column()
+    // @Column({select:false})
     password:string;
 
     @Column('enum',{enum:UserRoleEnum,default:UserRoleEnum.USER})
@@ -28,6 +29,12 @@ export class User{
     @OneToMany(() => Post,(post) => post.user)
     posts:Post[]
 
-    // @OneToMany(() => Comment,(comment) => comment.user)
-    // comments:Comment[]
+    @OneToMany(() => Comment,(comment) => comment.user)
+    comments:Comment[]
+
+    // This works just for output JSON Response
+    toJSON () {
+        delete this.password;
+        return this;
+    }
 }

@@ -39,7 +39,7 @@ export class Post {
     
     
 
-    @ManyToOne(() => User, user => user.posts)
+    @ManyToOne(() => User, user => user.posts,{onDelete:"CASCADE",onUpdate:"CASCADE"})
     user: User;
 
     @ManyToMany(() => Tag, tag => tag.posts,{onDelete:"CASCADE",onUpdate:"CASCADE"})

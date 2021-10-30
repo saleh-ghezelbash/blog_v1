@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { CreateUserDto } from 'src/user/dtos/create-user.dto';
+import { User } from 'src/user/user.entity';
 import { AuthService } from './auth.service';
 import { SigninDTO } from './dtos/signin.dto';
+import { UpdatePasswordDto } from './dtos/update-password.dto';
+import { GetUser } from './get-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -23,5 +26,15 @@ export class AuthController {
     @UseGuards(AuthGuard('jwt'))
     signout(@Res({ passthrough: true }) res:Response){
       return  this.authService.signout(res);
+    }
+
+    @Put('/updatepassword')
+    @UseGuards(AuthGuard('jwt'))
+    updatePassword(
+      @GetUser() user:User,
+      @Body() updatePasswordDto:UpdatePasswordDto,
+      @Res({ passthrough: true }) res:Response
+      ){
+      return this.authService.updatePassword(user,updatePasswordDto,res)
     }
 }
