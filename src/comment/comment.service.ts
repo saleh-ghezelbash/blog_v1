@@ -10,26 +10,19 @@ export class CommentService {
     async allComments(): Promise<Comment[]> {
         return await this.commentRepository.createQueryBuilder('comment')
             .leftJoinAndSelect('comment.post', 'post')
-            // .leftJoinAndSelect('comment.user', 'user')
+            .leftJoinAndSelect('comment.user', 'user')
             .orderBy({
                 "comment.isApproved": "ASC",
                 "post.createdAt": "ASC",
             })
-            .select(['comment', 'post.title', 'post.createdAt'
-                // 'user.name'
-            ])
             .getMany()
     }
 
     async findOne(id: string): Promise<Comment> {
         return await this.commentRepository.createQueryBuilder('comment')
             .leftJoinAndSelect('comment.post', 'post')
-            // .leftJoinAndSelect('comment.user', 'user')
+            .leftJoinAndSelect('comment.user', 'user')
             .andWhere('comment.id = :id', { id })
-            // .orderBy('comment.isApproved = :isApproved', { isApproved: true })
-            .select(['comment', 'post.title', 'post.createdAt'
-                // 'user.name'
-            ])
             .getOne()
     }
 
@@ -45,6 +38,12 @@ export class CommentService {
          // .set({isApproved})
          // .where("id = :id", { id })
          // .execute();
-         return this.commentRepository.findOne(id);
+
+        //  return this.commentRepository.findOne(id);
+        return await this.commentRepository.createQueryBuilder('comment')
+        .leftJoinAndSelect('comment.post', 'post')
+        .leftJoinAndSelect('comment.user', 'user')
+        .andWhere('comment.id = :id', { id })
+        .getOne()
     }
 }

@@ -39,8 +39,7 @@ export class CategoryController {
     @Delete(':id')
     @UseGuards(AuthGuard('jwt'),RolesGuard)
     @Roles(UserRoleEnum.ADMIN)
-    @HttpCode(204)
-    remove(@Param('id',ParseIntPipe) id: string){
-      return this.categoryService.remove(id);
+    removeCat(@Param('id',ParseIntPipe) id: string):Promise<string>{
+      return this.categoryService.removeCat(id);
     }
 }

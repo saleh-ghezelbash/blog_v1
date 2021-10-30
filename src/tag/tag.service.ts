@@ -23,7 +23,8 @@ export class TagService {
         return this.tagsRepository.findOne(id);
       }
     
-      async remove(id: string): Promise<void> {
+      async removeTag(id: string): Promise<string> {
         await this.tagsRepository.delete(id);
+        return 'ok';
       }
 }

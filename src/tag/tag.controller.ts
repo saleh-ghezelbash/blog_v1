@@ -35,7 +35,7 @@ export class TagController {
       @Delete(':id')
       @UseGuards(AuthGuard('jwt'),RolesGuard)
       @Roles(UserRoleEnum.ADMIN)
-      remove(@Param('id') id: string): Promise<void> {
-        return this.tagService.remove(id);
+      removeTag(@Param('id') id: string) {
+        return this.tagService.removeTag(id);
       }
 }

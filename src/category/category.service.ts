@@ -45,8 +45,9 @@ export class CategoryService {
         return await this.categoriesRepository.save(createCategoryDto);
       }
     
-      async remove(id: string): Promise<string> {
+      async removeCat(id: string): Promise<string> {
         await this.categoriesRepository.delete(id);
         return 'ok'
       }
+
 }

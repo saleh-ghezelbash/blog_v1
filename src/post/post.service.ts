@@ -6,7 +6,7 @@ import { CategoryService } from 'src/category/category.service';
 import { Comment } from 'src/comment/comment.entity';
 import { Tag } from 'src/tag/tag.entity';
 import { TagService } from 'src/tag/tag.service';
-import { User } from 'src/user/user.entity';
+import { User, UserRoleEnum } from 'src/user/user.entity';
 import { Repository } from 'typeorm';
 import { CreateCommenttDto } from './dtos/create-comment.dto';
 import { CreatePostDto } from './dtos/create-post.dto';
@@ -31,6 +31,9 @@ export class PostService {
   ) { }
 
   private ensureOwnerShip(user: User, post: Post): boolean {
+    if (user.role == UserRoleEnum.ADMIN) {
+      return true;
+    }
     return user.id === post.user.id;
   }
 
@@ -42,7 +45,13 @@ export class PostService {
   }
 
   async findAll(): Promise<Post[]> {
-    return await this.postsRepository.find();
+    // return await this.postsRepository.find();
+    return await this.postsRepository.createQueryBuilder('post')
+      .leftJoinAndSelect('post.user', 'user')
+      .select(['post.id', 'post.title', 'post.slug', 'post.content', 'post.createdAt', 'post.imageCover','user.id', 'user.name'])
+      .loadRelationCountAndMap('post.commentCount','post.comments')
+      .orderBy('post.createdAt', 'DESC')
+      .getMany();
 
     // return this.postsRepository.find({
     //   relations:['category','comments']
@@ -65,13 +74,6 @@ export class PostService {
     //   // select:['id','title']
     // });
 
-    // return await this.postsRepository.createQueryBuilder('post')
-    //   .orderBy('post.createdAt', 'DESC')
-    //   .getMany();
-
-    // return await this.getPostsWithCommentCountQuery()
-    //   .orderBy('post.createdAt', 'DESC')
-    //   .getMany();
   }
 
   async findOne(id: string): Promise<Post> {
@@ -82,9 +84,13 @@ export class PostService {
       .leftJoinAndSelect('post.tags', 'tag')
       .leftJoinAndSelect('post.user', 'user')
       .leftJoinAndSelect('post.comments', 'comment', 'comment.isApproved = :isApproved', { isApproved: true })
+      .leftJoinAndSelect('comment.user', 'commentUser')
       .andWhere('post.id = :id', { id })
-      // .andWhere('comment.isApproved = :isApproved', { isApproved: true })
-      // .select(['post','cat.title','tag.title'])
+      .select(['post.id', 'post.title', 'post.slug', 'post.content', 'post.createdAt', 'post.imageCover','user.id', 'user.name'
+              ,'cat.id','cat.title','tag.id','tag.title','comment.id','comment.content','comment.createdAt',
+              'commentUser.id','commentUser.name'
+      ])
+      .loadRelationCountAndMap('post.commentCount','post.comments')
       .getOne()
   }
 
@@ -123,24 +129,30 @@ export class PostService {
     // createPostDto.tagIds.forEach(async t => {
     //         tags.push(await this.tagRepository.findOne(t.toString()));
     //     })
-    const post = this.postsRepository.create(createPostDto);
-    // console.log('post:',post);
-    // post.user = user;
-    post.category = cat;
-    post.tags = tags;
-    post.user = user;
-    // post.categoryId = createPostDto.categoryId
-    // post.tags = createPostDto.tagsId
+    const p = this.postsRepository.create(createPostDto);
+    p.category = cat;
+    p.tags = tags;
+    p.user = user;
 
-    return this.postsRepository.save(post);
+    const post = await this.postsRepository.save(p);
+
+    return await this.postsRepository.createQueryBuilder('post')
+    .leftJoinAndSelect('post.category', 'cat')
+    .leftJoinAndSelect('post.tags', 'tag')
+    .leftJoinAndSelect('post.user', 'user')
+    .andWhere('post.id = :id', { id: post.id })
+    .select(['post','user.id', 'user.name'
+            ,'cat.id','cat.title','tag.id','tag.title',
+    ])
+    .getOne()
   }
 
   async remove(id: string, user: User): Promise<string> {
-    
+
     const post = await this.findOne(id);
-    
+
     if (!this.ensureOwnerShip(user, post)) {
-      throw new UnauthorizedException("You are nor own this Post!");
+      throw new UnauthorizedException("You are not own this Post!");
     }
     await this.postsRepository.delete(id);
     return 'ok'
@@ -152,9 +164,9 @@ export class PostService {
   ) {
 
     const p = await this.findOne(updatePostDto.id.toString());
-    
+
     if (!this.ensureOwnerShip(user, p)) {
-      throw new UnauthorizedException("You are nor own this Post!");
+      throw new UnauthorizedException("You are not own this Post!");
     }
 
     const cat = await this.catRepository.findOne(updatePostDto.categoryId);
@@ -169,18 +181,17 @@ export class PostService {
 
     await this.postsRepository.save(post);
 
-    return p;
-    // return this.findOne(updatePostDto.id.toString())
+    return this.findOne(updatePostDto.id.toString())
   }
 
   async createComment(
     postId: string,
     createCommenttDto: CreateCommenttDto,
     user: User
-  ): Promise<Comment> {
+  ): Promise<string> {
     const p = await this.findOne(postId);
-    
-    if (this.ensureOwnerShip(user, p)) {
+
+    if (user.role != UserRoleEnum.ADMIN && this.ensureOwnerShip(user, p)) {
       throw new UnauthorizedException("You can not Comment for your own Post!");
     }
 
@@ -188,7 +199,8 @@ export class PostService {
     const comment = this.commentRepository.create(createCommenttDto);
     comment.post = post;
     comment.user = user;
-    return this.commentRepository.save(comment);
+    await this.commentRepository.save(comment);
+    return 'ok'
 
   }
 }

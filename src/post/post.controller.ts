@@ -75,7 +75,7 @@ export class PostController {
             // ValidationPipe
         ) createCommenttDto: CreateCommenttDto,
         @GetUser() user:User
-    ): Promise<Comment> {
+    ): Promise<string> {
         // console.log('dto:', createPostDto);
 
         return this.postService.createComment(

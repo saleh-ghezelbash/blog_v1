@@ -14,7 +14,11 @@ export class UserService {
   ) { }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    // return this.usersRepository.find();
+    return await this.usersRepository.createQueryBuilder('user')
+    .leftJoinAndSelect('user.posts', 'post')
+    // .select(['user.id','user.name','user.email','user.role','post.id','post.title','post.slug','post.imageCover','post.createdAt'])
+    .getMany();
   }
 
   async findOne(id: string): Promise<User> {
@@ -22,7 +26,8 @@ export class UserService {
     
     return await this.usersRepository.createQueryBuilder('user')
     .leftJoinAndSelect('user.posts', 'post')
-    .leftJoinAndSelect('post.comments', 'comment', 'comment.isApproved = :isApproved', { isApproved: true })
+    .leftJoinAndSelect('post.comments', 'comment')
+    // .leftJoinAndSelect('post.comments', 'comment', 'comment.isApproved = :isApproved', { isApproved: true })
     .andWhere('user.id = :id', { id })
     // .select(['post','cat.title','tag.title'])
     .getOne()
@@ -39,13 +44,19 @@ export class UserService {
 
     const user = this.usersRepository.create(updateUserDto);
     await this.usersRepository.save(user);
-    return this.findOne(updateUserDto.id.toString())
+    // return this.findOne(updateUserDto.id.toString());
+    return await this.usersRepository.createQueryBuilder('user')
+    .leftJoinAndSelect('user.posts', 'post')
+    .leftJoinAndSelect('post.comments', 'comment')
+    .andWhere('user.id = :id', { id: updateUserDto.id.toString() })
+    .getOne()
   }
 
   async findProfile(id: string): Promise<User> {
     return await this.usersRepository.createQueryBuilder('user')
       .leftJoinAndSelect('user.posts', 'post')
       .andWhere('user.id = :id', { id })
+      .select(['user.id','user.name','post.id','post.title','post.slug','post.imageCover','post.createdAt'])
       .getOne();
   }
 
@@ -61,10 +72,20 @@ export class UserService {
       ...updateProfileDto
     });
     await this.usersRepository.save(u);
-    return this.findOne(user.id.toString())
+    // return this.findOne(user.id.toString());
+    return await this.usersRepository.createQueryBuilder('user')
+    .leftJoinAndSelect('user.posts', 'post')
+    .andWhere('user.id = :id', { id: user.id.toString() })
+    .select(['user.id','user.name','user.email','user.role','post.id','post.title','post.slug','post.imageCover','post.createdAt'])
+    .getOne();
   }
 
   async myProfile(user: User): Promise<User> {
-    return this.findOne(user.id.toString());
+    // return this.findOne(user.id.toString());
+    return await this.usersRepository.createQueryBuilder('user')
+    .leftJoinAndSelect('user.posts', 'post')
+    .andWhere('user.id = :id', { id: user.id.toString() })
+    .select(['user.id','user.name','user.email','user.role','post.id','post.title','post.slug','post.imageCover','post.createdAt'])
+    .getOne();
   }
 }
