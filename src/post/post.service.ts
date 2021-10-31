@@ -203,4 +203,14 @@ export class PostService {
     return 'ok'
 
   }
+
+  async relatedPost(id:string):Promise<Post[]>{
+    const post = await this.postsRepository.findOne(id,{relations:['category']});
+    
+    return this.postsRepository.createQueryBuilder('post')
+        .leftJoinAndSelect('post.category','cat')
+        .andWhere('cat.id = :id', { id:post.category.id })
+        .limit(5)
+        .getMany();
+  }
 }

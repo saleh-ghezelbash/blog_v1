@@ -84,6 +84,11 @@ export class PostController {
             user
         );
     }
+
+    @Get(':id/relatedPost')
+    relatedPost(@Param('id') id:string):Promise<PostEntity[]>{
+        return this.postService.relatedPost(id);
+    }
 }
 
 
