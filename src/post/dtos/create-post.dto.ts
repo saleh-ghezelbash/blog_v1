@@ -1,22 +1,26 @@
-import { IsEmail, IsString,IsNumber,Max,Min, Length } from "class-validator";
-import { Cat } from "src/category/category.entity";
-import { Tag } from "src/tag/tag.entity";
+import { IsString,IsNumber,MinLength, MaxLength, IsArray, IsNotEmpty } from "class-validator";
+
 
 
 export class CreatePostDto{
-    @Length(2,200,
-        {
-            message:"تعداد کاراکتر برای عنوان پست بین 2 و 200 می باشد",
-            // groups:['create','update']
-        })
+    @IsString({message:"Title must be a string!"})
+    @MinLength(2,{message:"Minimom characters for Title is 2!"})
+    @MaxLength(200,{message:"Maximom characters for Title is 200!"})
     title: string;
+    
+    @IsString({message:"Content must be a string!"})
+    @MinLength(20,{message:"Minimom characters for Content is 20!"})
+    @MaxLength(2000,{message:"Maximom characters for Content is 2000!"})
     content:string;
-    tagIds:number[];
-    // tags:Tag;
+
     imageCover:string;
+
+    @IsNotEmpty()
     categoryId: number;
-    // category: Cat;
-    // category: number;
+
+    @IsArray()
+    @IsNumber({},{each: true,message:"Each value in tagIds must be a number!"})
+    tagIds:number[];
 
 }
 

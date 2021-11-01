@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Post, Put, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Res, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
-import { CreateUserDto } from 'src/user/dtos/create-user.dto';
+import { CreateUserDto } from 'src/auth/dtos/create-user.dto';
 import { User } from 'src/user/user.entity';
 import { AuthService } from './auth.service';
 import { SigninDTO } from './dtos/signin.dto';
@@ -13,12 +13,12 @@ export class AuthController {
     constructor(private authService : AuthService){}
     
     @Post('/signup')
-    signup(@Res({ passthrough: true }) res:Response,@Body() createUserDto: CreateUserDto){
+    signup(@Res({ passthrough: true }) res:Response,@Body(ValidationPipe) createUserDto: CreateUserDto){
       return  this.authService.signup(createUserDto,res);
     }
 
     @Post('/signin')
-    signin(@Res({ passthrough: true }) res:Response,@Body() credentials:SigninDTO){
+    signin(@Res({ passthrough: true }) res:Response,@Body(ValidationPipe) credentials:SigninDTO){
       return  this.authService.signin(credentials,res);
     }
 
@@ -32,7 +32,7 @@ export class AuthController {
     @UseGuards(AuthGuard('jwt'))
     updatePassword(
       @GetUser() user:User,
-      @Body() updatePasswordDto:UpdatePasswordDto,
+      @Body(ValidationPipe) updatePasswordDto:UpdatePasswordDto,
       @Res({ passthrough: true }) res:Response
       ){
       return this.authService.updatePassword(user,updatePasswordDto,res)

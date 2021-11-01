@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, UseGuards, ValidationPipe } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { Cat as Category } from "./category.entity";
 import { CreateCategoryDto } from './dtos/create-category.dto';
@@ -22,7 +22,7 @@ export class CategoryController {
     @Post()
     @UseGuards(AuthGuard('jwt'),RolesGuard)
     @Roles(UserRoleEnum.ADMIN)
-    create(@Body() createCategoryDto:CreateCategoryDto): Promise<Category> {
+    create(@Body(ValidationPipe) createCategoryDto:CreateCategoryDto): Promise<Category> {
       return this.categoryService.create(createCategoryDto);
     }
   

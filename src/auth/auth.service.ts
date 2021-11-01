@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, HttpCode, HttpException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateUserDto } from 'src/user/dtos/create-user.dto';
+import { CreateUserDto } from 'src/auth/dtos/create-user.dto';
 import { User } from 'src/user/user.entity';
 import { UserService } from 'src/user/user.service';
 import { Repository } from 'typeorm';

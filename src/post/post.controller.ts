@@ -20,9 +20,7 @@ export class PostController {
     @UseGuards(AuthGuard('jwt'),RolesGuard)
     @Roles(UserRoleEnum.PUBLISHER,UserRoleEnum.ADMIN)
     create(
-        @Body(
-            // ValidationPipe
-        ) createPostDto: CreatePostDto,
+        @Body(ValidationPipe) createPostDto: CreatePostDto,
         @GetUser() user: User
     ): Promise<PostEntity> {
         // console.log('dto:', createPostDto);
@@ -55,9 +53,7 @@ export class PostController {
     @UseGuards(AuthGuard('jwt'),RolesGuard)
     @Roles(UserRoleEnum.PUBLISHER,UserRoleEnum.ADMIN)
     update(
-        @Body(
-            // ValidationPipe
-        ) updatePostDto: UpdatePostDto,
+        @Body(ValidationPipe) updatePostDto: UpdatePostDto,
         @GetUser() user:User
     ){
 
@@ -71,9 +67,7 @@ export class PostController {
     @UseGuards(AuthGuard('jwt'))
     createComment(
         @Param('postId') postId: string,
-        @Body(
-            // ValidationPipe
-        ) createCommenttDto: CreateCommenttDto,
+        @Body(ValidationPipe) createCommenttDto: CreateCommenttDto,
         @GetUser() user:User
     ): Promise<string> {
         // console.log('dto:', createPostDto);

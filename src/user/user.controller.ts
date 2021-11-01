@@ -1,9 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { Roles } from 'src/auth/roles.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
-import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { User, UserRoleEnum } from './user.entity';
 import { UserService } from './user.service';
@@ -32,7 +31,7 @@ export class UserController {
   }
 
   @Put()
-  updateUser(@Body() updateUserDto: UpdateUserDto): Promise<User> {
+  updateUser(@Body(ValidationPipe) updateUserDto: UpdateUserDto): Promise<User> {
     return this.userService.updateUser(updateUserDto);
   }
 }

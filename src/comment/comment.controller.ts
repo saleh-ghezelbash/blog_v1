@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseBoolPipe, Put, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/auth/roles.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
@@ -27,7 +27,7 @@ export class CommentController {
     }
 
     @Put(':id')
-    isApproved(@Param('id') id:string,@Body('isApproved') isApproved:boolean){
+    isApproved(@Param('id') id:string,@Body('isApproved',ParseBoolPipe) isApproved:boolean){
         return this.commentService.isApproved(id,isApproved);
     }
 }
