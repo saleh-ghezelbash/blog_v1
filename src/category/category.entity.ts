@@ -6,11 +6,9 @@ export class Cat {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({
-    unique:true
-  })
+  @Column()
   title: string;
 
-  @ManyToMany(() => Post, post => post.tags)
+  @OneToMany(() => Post, post => post.category)
   posts: Post[];
 }

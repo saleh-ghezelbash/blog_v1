@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseFilters, UseGuards, ValidationPipe } from '@nestjs/common';
 import { PostService } from './post.service';
 import { Post as PostEntity } from './post.entity';
 import { CreatePostDto } from './dtos/create-post.dto';
@@ -10,8 +10,10 @@ import { User, UserRoleEnum } from 'src/user/user.entity';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
+import { HttpExceptionFilter } from '../filters/http-exception.filter';
 
 @Controller('post')
+// @UseFilters(new HttpExceptionFilter())
 export class PostController {
     constructor(private readonly postService: PostService) { }
 

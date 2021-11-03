@@ -12,6 +12,8 @@ import { UserModule } from './user/user.module';
 import { Comment } from './comment/comment.entity';
 import { User } from './user/user.entity';
 import { AuthModule } from './auth/auth.module';
+import { APP_FILTER } from '@nestjs/core';
+import { GlobalExceptionFilter } from './filters/global-exception.filter';
 
 
 @Module({
@@ -24,9 +26,16 @@ import { AuthModule } from './auth/auth.module';
     database: 'blogv1',
     synchronize: true,
     // entities: [join(__dirname, '/../**/**.entity{.ts,.js}')],
-    entities:[Tag,Post,Cat,Comment,User]
-}), TagModule, CommentModule, CategoryModule, PostModule, UserModule, AuthModule],
+    entities: [Tag, Post, Cat, Comment, User]
+  }), TagModule, CommentModule, CategoryModule, PostModule, UserModule, AuthModule],
   controllers: [],
-  providers: [],
+  providers: [
+    // {
+    //   // This is for Catch all errors especially Typeorm errors!
+    //   // This not working for some validation for example password requierments
+    //   provide: APP_FILTER,
+    //   useClass: GlobalExceptionFilter
+    // }
+  ],
 })
-export class AppModule {}
+export class AppModule { }

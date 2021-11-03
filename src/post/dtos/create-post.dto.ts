@@ -1,4 +1,5 @@
 import { IsString,IsNumber,MinLength, MaxLength, IsArray, IsNotEmpty } from "class-validator";
+import { Post } from "../post.entity";
 
 
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Comment } from './comment.entity';
@@ -27,23 +27,42 @@ export class CommentService {
     }
 
     async deleteOne(id: string): Promise<string> {
-        await this.commentRepository.delete(id);
-        return 'ok'
+        const comment = await this.commentRepository.findOne(id);
+        if (!comment) {
+            throw new BadRequestException("Comment not found!");
+        }
+
+        try {
+            await this.commentRepository.delete(id);
+            return 'ok'
+        } catch (error) {
+            throw new InternalServerErrorException(error.message);
+        }
     }
 
-   async isApproved(id:string, isApproved: boolean) {
-         await this.commentRepository.update(id,{isApproved})
-         // return await this.commentRepository.createQueryBuilder()
-         // .update(Comment)
-         // .set({isApproved})
-         // .where("id = :id", { id })
-         // .execute();
+    async isApproved(id: string, isApproved: boolean) {
+        const comment = await this.commentRepository.findOne(id);
+        if (!comment) {
+            throw new BadRequestException("Comment not found!");
+        }
 
-        //  return this.commentRepository.findOne(id);
-        return await this.commentRepository.createQueryBuilder('comment')
-        .leftJoinAndSelect('comment.post', 'post')
-        .leftJoinAndSelect('comment.user', 'user')
-        .andWhere('comment.id = :id', { id })
-        .getOne()
+        try {
+            await this.commentRepository.update(id, { isApproved })
+            // return await this.commentRepository.createQueryBuilder()
+            // .update(Comment)
+            // .set({isApproved})
+            // .where("id = :id", { id })
+            // .execute();
+
+            //  return this.commentRepository.findOne(id);
+            return await this.commentRepository.createQueryBuilder('comment')
+                .leftJoinAndSelect('comment.post', 'post')
+                .leftJoinAndSelect('comment.user', 'user')
+                .andWhere('comment.id = :id', { id })
+                .getOne()
+        } catch (error) {
+            throw new InternalServerErrorException(error.message);
+        }
+
     }
 }

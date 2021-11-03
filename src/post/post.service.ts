@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import slugify from 'slugify';
 import { Cat } from 'src/category/category.entity';
@@ -23,11 +23,7 @@ export class PostService {
     @InjectRepository(Tag)
     private tagRepository: Repository<Tag>,
     @InjectRepository(Comment)
-    private commentRepository: Repository<Comment>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    // private readonly categoryService: CategoryService,    
-    // private readonly tagService: TagService
+    private commentRepository: Repository<Comment>
   ) { }
 
   private ensureOwnerShip(user: User, post: Post): boolean {
@@ -48,8 +44,8 @@ export class PostService {
     // return await this.postsRepository.find();
     return await this.postsRepository.createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
-      .select(['post.id', 'post.title', 'post.slug', 'post.content', 'post.createdAt', 'post.imageCover','user.id', 'user.name'])
-      .loadRelationCountAndMap('post.commentCount','post.comments')
+      .select(['post.id', 'post.title', 'post.slug', 'post.content', 'post.createdAt', 'post.imageCover', 'user.id', 'user.name'])
+      .loadRelationCountAndMap('post.commentCount', 'post.comments')
       .orderBy('post.createdAt', 'DESC')
       .getMany();
 
@@ -86,11 +82,11 @@ export class PostService {
       .leftJoinAndSelect('post.comments', 'comment', 'comment.isApproved = :isApproved', { isApproved: true })
       .leftJoinAndSelect('comment.user', 'commentUser')
       .andWhere('post.id = :id', { id })
-      .select(['post.id', 'post.title', 'post.slug', 'post.content', 'post.createdAt', 'post.imageCover','user.id', 'user.name'
-              ,'cat.id','cat.title','tag.id','tag.title','comment.id','comment.content','comment.createdAt',
-              'commentUser.id','commentUser.name'
+      .select(['post.id', 'post.title', 'post.slug', 'post.content', 'post.createdAt', 'post.imageCover', 'user.id', 'user.name'
+        , 'cat.id', 'cat.title', 'tag.id', 'tag.title', 'comment.id', 'comment.content', 'comment.createdAt',
+        'commentUser.id', 'commentUser.name'
       ])
-      .loadRelationCountAndMap('post.commentCount','post.comments')
+      .loadRelationCountAndMap('post.commentCount', 'post.comments')
       .getOne()
   }
 
@@ -120,36 +116,55 @@ export class PostService {
     user: User
   ): Promise<Post> {
 
+    if (await this.postsRepository.findOne({ where: { title: createPostDto.title } })) {
+      throw new BadRequestException("Post Title must be unique!")
+    }
+
     const cat = await this.catRepository.findOne(createPostDto.categoryId);
-    // const tags = await this.tagRepository.findByIds(updatePostDto.tagIds);
-    const tags = await this.tagRepository.createQueryBuilder("tag")
-      .where("tag.id IN (:...ids)", { ids: createPostDto.tagIds })
-      .getMany();
-    // const tags: Tag[] = [];
-    // createPostDto.tagIds.forEach(async t => {
-    //         tags.push(await this.tagRepository.findOne(t.toString()));
-    //     })
-    const p = this.postsRepository.create(createPostDto);
-    p.category = cat;
-    p.tags = tags;
-    p.user = user;
+    if (!cat) {
+      throw new NotFoundException("Category not Found!");
+    }
 
-    const post = await this.postsRepository.save(p);
+    try {
+      // const tags = await this.tagRepository.findByIds(updatePostDto.tagIds);
+      const tags = await this.tagRepository.createQueryBuilder("tag")
+        .where("tag.id IN (:...ids)", { ids: createPostDto.tagIds })
+        .getMany();
 
-    return await this.postsRepository.createQueryBuilder('post')
-    .leftJoinAndSelect('post.category', 'cat')
-    .leftJoinAndSelect('post.tags', 'tag')
-    .leftJoinAndSelect('post.user', 'user')
-    .andWhere('post.id = :id', { id: post.id })
-    .select(['post','user.id', 'user.name'
-            ,'cat.id','cat.title','tag.id','tag.title',
-    ])
-    .getOne()
+      // const tags: Tag[] = [];
+      // createPostDto.tagIds.forEach(async t => {
+      //         tags.push(await this.tagRepository.findOne(t.toString()));
+      //     })
+      const p = this.postsRepository.create(createPostDto);
+
+      p.category = cat;
+      p.tags = tags;
+      p.user = user;
+
+      const post = await this.postsRepository.save(p);
+
+      return await this.postsRepository.createQueryBuilder('post')
+        .leftJoinAndSelect('post.category', 'cat')
+        .leftJoinAndSelect('post.tags', 'tag')
+        .leftJoinAndSelect('post.user', 'user')
+        .andWhere('post.id = :id', { id: post.id })
+        .select(['post', 'user.id', 'user.name'
+          , 'cat.id', 'cat.title', 'tag.id', 'tag.title',
+        ])
+        .getOne()
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
   }
 
   async remove(id: string, user: User): Promise<string> {
 
     const post = await this.findOne(id);
+
+    if (!post) {
+      throw new NotFoundException("Post not found!");
+    }
 
     if (!this.ensureOwnerShip(user, post)) {
       throw new UnauthorizedException("You are not own this Post!");
@@ -165,23 +180,40 @@ export class PostService {
 
     const p = await this.findOne(updatePostDto.id.toString());
 
+    if (!p) {
+      throw new NotFoundException("Post not found!");
+    }
+
     if (!this.ensureOwnerShip(user, p)) {
       throw new UnauthorizedException("You are not own this Post!");
     }
 
+    if (await this.postsRepository.findOne({ where: { title: updatePostDto.title } })) {
+      throw new BadRequestException("Post Title must be unique!")
+    }
+
     const cat = await this.catRepository.findOne(updatePostDto.categoryId);
-    const tags = await this.tagRepository.findByIds(updatePostDto.tagIds);
-    // const tags = await this.tagRepository.createQueryBuilder("tag")
-    // .where("tag.id IN (:...ids)", { ids:updatePostDto.tagIds })
-    // .getMany();
+    if (!cat) {
+      throw new NotFoundException("Category not Found!");
+    }
 
-    const post = this.postsRepository.create(updatePostDto);
-    post.category = cat;
-    post.tags = tags;
+    try {
+      const tags = await this.tagRepository.findByIds(updatePostDto.tagIds);
+      // const tags = await this.tagRepository.createQueryBuilder("tag")
+      // .where("tag.id IN (:...ids)", { ids:updatePostDto.tagIds })
+      // .getMany();
 
-    await this.postsRepository.save(post);
+      const post = this.postsRepository.create(updatePostDto);
+      post.category = cat;
+      post.tags = tags;
 
-    return this.findOne(updatePostDto.id.toString())
+      await this.postsRepository.save(post);
+
+      return this.findOne(updatePostDto.id.toString());
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
   }
 
   async createComment(
@@ -189,28 +221,37 @@ export class PostService {
     createCommenttDto: CreateCommenttDto,
     user: User
   ): Promise<string> {
-    const p = await this.findOne(postId);
+    const post = await this.postsRepository.findOne(postId);
+    if (!post) {
+      throw new BadRequestException("Post not found!");
+    }
 
+    const p = await this.findOne(postId);
     if (user.role != UserRoleEnum.ADMIN && this.ensureOwnerShip(user, p)) {
       throw new UnauthorizedException("You can not Comment for your own Post!");
     }
 
-    const post = await this.postsRepository.findOne(postId);
-    const comment = this.commentRepository.create(createCommenttDto);
-    comment.post = post;
-    comment.user = user;
-    await this.commentRepository.save(comment);
-    return 'ok'
-
+    try {
+      const comment = this.commentRepository.create(createCommenttDto);
+      comment.post = post;
+      comment.user = user;
+      await this.commentRepository.save(comment);
+      return 'ok';
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
   }
 
-  async relatedPost(id:string):Promise<Post[]>{
-    const post = await this.postsRepository.findOne(id,{relations:['category']});
-    
+  async relatedPost(id: string): Promise<Post[]> {
+    const post = await this.postsRepository.findOne(id, { relations: ['category'] });
+    if (!post) {
+      throw new BadRequestException("Post not found!");
+    }
+
     return this.postsRepository.createQueryBuilder('post')
-        .leftJoinAndSelect('post.category','cat')
-        .andWhere('cat.id = :id', { id:post.category.id })
-        .limit(5)
-        .getMany();
+      .leftJoinAndSelect('post.category', 'cat')
+      .andWhere('cat.id = :id', { id: post.category.id })
+      .limit(5)
+      .getMany();
   }
 }

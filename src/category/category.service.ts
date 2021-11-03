@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cat as Category } from './category.entity';
@@ -11,8 +11,10 @@ export class CategoryService {
         private categoriesRepository: Repository<Category>,
       ) { }
     
-      findAll(): Promise<Category[]> {
+     async findAll(): Promise<Category[]> {
         return this.categoriesRepository.find();
+
+
         // return this.categoriesRepository.find({
         //   // where:{
         //   //   id:MoreThan(id), //id و createdAt باهم and شده اند
@@ -34,20 +36,42 @@ export class CategoryService {
         // });
       }
     
-      findOne(id: string): Promise<Category> {
-        return this.categoriesRepository.findOne(id);
+     async findOne(id: string): Promise<Category> {
+       
+        // return this.categoriesRepository.findOne(id,{relations:['posts']});
+        return await this.categoriesRepository.createQueryBuilder('cat')
+        .leftJoinAndSelect('cat.posts','post')
+        .leftJoinAndSelect('post.user', 'user')
+        .andWhere('cat.id = :id', { id })
+        .select(['cat','post.id', 'post.title', 'post.slug', 'post.content', 'post.createdAt', 'post.imageCover','user.id', 'user.name'])
+        .getOne();
       }
     
     //   async create(title:string): Promise<Category> {
     //     return await this.categoriesRepository.save({title});
     //   }
       async create(createCategoryDto:CreateCategoryDto): Promise<Category> {
+        
+        const cat = await this.categoriesRepository.findOne({where:{title:createCategoryDto.title}});
+        if (cat) {
+          throw new BadRequestException("Category Title must be unique!");
+        }
         return await this.categoriesRepository.save(createCategoryDto);
       }
     
       async removeCat(id: string): Promise<string> {
-        await this.categoriesRepository.delete(id);
-        return 'ok'
+       const cat = await this.categoriesRepository.findOne(id);
+       if (!cat) {
+         throw new BadRequestException("Category not found!");
+       }
+
+       try {
+         await this.categoriesRepository.delete(id);
+         return 'ok'
+       } catch (error) {
+         throw new InternalServerErrorException(error.message);
+       }
+      
       }
 
 }
